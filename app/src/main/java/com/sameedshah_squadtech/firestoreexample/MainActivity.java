@@ -23,6 +23,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
   DocumentReference noteRef = db.collection("Notebook").document("My First Note");
   //DocumentReference noteRef = db.document("Notebook/My First Note");
 
-    EditText edt_text_title,edt_text_desc;
+    EditText edt_text_title,edt_text_desc,edt_text_priority;
     TextView textview_data;
 
     @Override
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
         edt_text_desc = findViewById(R.id.edt_text_desc);
         edt_text_title = findViewById(R.id.edt_text_title);
+        edt_text_priority  = findViewById(R.id.edt_text_priority);
         textview_data = findViewById(R.id.text_data);
     }
 
@@ -101,10 +103,12 @@ public class MainActivity extends AppCompatActivity {
                     note.setDocumentId(dataSnapshot.getId());
                     String title = note.getTitle();
                     String desc = note.getDescription();
-
+                    int priority = note.getPriority();
                     String documentId = note.getDocumentId();
 
-                    data += "title: " + title + "\nDescription: " + desc + "\nID: " +documentId +  "\n\n";
+
+                    data += "title: " + title + "\nDescription: " + desc + "\nID: " +documentId +
+                            "\nPriority: " + priority +"\n\n";
                 }
                 textview_data.setText(data);
             }
@@ -118,11 +122,17 @@ public class MainActivity extends AppCompatActivity {
         String title = edt_text_title.getText().toString();
         String description = edt_text_desc.getText().toString();
 
+        if(edt_text_priority.length() == 0){
+            edt_text_priority.setText("0");
+        }
+        int priority = Integer.parseInt(edt_text_priority.getText().toString());
+
+
 //        Map<String, Object> note = new HashMap<>();
 //        note.put(KEY_TITLE, title);
 //        note.put(KEY_DESCRIPTION, description);
 
-        Note note = new Note(title,description);
+        Note note = new Note(title,description,priority);
 
 
         //db.collection("Notebook/My First Note"); you can also use this method
@@ -190,7 +200,10 @@ public class MainActivity extends AppCompatActivity {
 //                    }
 //                }); for single value we use this method
 
-        notebookRef.get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+        notebookRef.whereGreaterThanOrEqualTo("priority",2)
+                .orderBy("priority", Query.Direction.DESCENDING)
+                .limit(1)
+                .get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
             @Override
             public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                 String data = "";
@@ -201,8 +214,10 @@ public class MainActivity extends AppCompatActivity {
                     String title = note.getTitle();
                     String description = note.getDescription();
                     String documentId = note.getDocumentId();
+                    int priority = note.getPriority();
 
-                    data += "title: " + title + "\nDescription: " + description + "\nID: " +documentId +  "\n\n";
+                    data += "title: " + title + "\nDescription: " + description + "\nID: " +documentId +
+                            "\nPriority: " + priority +"\n\n";
                 }
                 textview_data.setText(data);
             }
