@@ -201,7 +201,9 @@ public class MainActivity extends AppCompatActivity {
 //                }); for single value we use this method
 
         notebookRef.whereGreaterThanOrEqualTo("priority",2)
-                .orderBy("priority", Query.Direction.DESCENDING)
+//                .whereEqualTo("title","Aa")
+                .orderBy("priority", Query.Direction.ASCENDING)
+                .orderBy("title")
                 .limit(1)
                 .get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
             @Override
@@ -220,6 +222,14 @@ public class MainActivity extends AppCompatActivity {
                             "\nPriority: " + priority +"\n\n";
                 }
                 textview_data.setText(data);
+            }
+        })
+        .addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+                Log.d(TAG, "onFailure: " + e);
+//                Toast.makeText(MainActivity.this, "On failure!", Toast.LENGTH_SHORT).show();
             }
         });
     }
