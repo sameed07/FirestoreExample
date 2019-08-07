@@ -12,10 +12,12 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
@@ -28,14 +30,16 @@ import javax.annotation.Nullable;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "MainActivity";
-    private static final String KEY_TITLE = "title";
-    private static final String KEY_DESCRIPTION = "description";
+//    private static final String TAG = "MainActivity";
+//    private static final String KEY_TITLE = "title";
+//    private static final String KEY_DESCRIPTION = "description";
+
+    private DocumentSnapshot lastResult;
 
 
     FirebaseFirestore db = FirebaseFirestore.getInstance();
     CollectionReference notebookRef = db.collection("Notebook");
-    DocumentReference noteRef = db.collection("Notebook").document("My First Note");
+//    DocumentReference noteRef = db.collection("Notebook").document("My First Note");
     //DocumentReference noteRef = db.document("Notebook/My First Note");
 
     EditText edt_text_title, edt_text_desc, edt_text_priority;
@@ -52,61 +56,61 @@ public class MainActivity extends AppCompatActivity {
         textview_data = findViewById(R.id.text_data);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-//      noteRef.addSnapshotListener(this, new EventListener<DocumentSnapshot>() {
+//    @Override
+//    protected void onStart() {
+//        super.onStart();
+////      noteRef.addSnapshotListener(this, new EventListener<DocumentSnapshot>() {
+////            @Override
+////            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+////
+////                if(e != null){
+////
+////                    Toast.makeText(MainActivity.this, "Error While loading!", Toast.LENGTH_SHORT).show();
+////
+////                    Log.d(TAG, "onEvent: " + e.toString());
+////                    return;
+////                }
+////
+////                if(documentSnapshot.exists()){
+////
+////
+////                    Note note = documentSnapshot.toObject(Note.class);
+////
+////                    String title= note.getTitle();
+////                    String desc = note.getDescription();
+////
+////                    textview_data.setText("Title : " + title + "\n" + "Description : " + desc);
+////                }else {
+////                    textview_data.setText("");
+////                }
+////            }
+////        }); this method is just for single value
+//        notebookRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
 //            @Override
-//            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+//            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
 //
-//                if(e != null){
-//
-//                    Toast.makeText(MainActivity.this, "Error While loading!", Toast.LENGTH_SHORT).show();
-//
-//                    Log.d(TAG, "onEvent: " + e.toString());
+//                if (e != null) {
 //                    return;
 //                }
+//                String data = "";
+//                for (QueryDocumentSnapshot dataSnapshot : queryDocumentSnapshots) {
 //
-//                if(documentSnapshot.exists()){
+//                    Note note = dataSnapshot.toObject(Note.class);
 //
-//
-//                    Note note = documentSnapshot.toObject(Note.class);
-//
-//                    String title= note.getTitle();
+//                    note.setDocumentId(dataSnapshot.getId());
+//                    String title = note.getTitle();
 //                    String desc = note.getDescription();
+//                    int priority = note.getPriority();
+//                    String documentId = note.getDocumentId();
 //
-//                    textview_data.setText("Title : " + title + "\n" + "Description : " + desc);
-//                }else {
-//                    textview_data.setText("");
+//
+//                    data += "title: " + title + "\nDescription: " + desc + "\nID: " + documentId +
+//                            "\nPriority: " + priority + "\n\n";
 //                }
+//                textview_data.setText(data);
 //            }
-//        }); this method is just for single value
-        notebookRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
-            @Override
-            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-
-                if (e != null) {
-                    return;
-                }
-                String data = "";
-                for (QueryDocumentSnapshot dataSnapshot : queryDocumentSnapshots) {
-
-                    Note note = dataSnapshot.toObject(Note.class);
-
-                    note.setDocumentId(dataSnapshot.getId());
-                    String title = note.getTitle();
-                    String desc = note.getDescription();
-                    int priority = note.getPriority();
-                    String documentId = note.getDocumentId();
-
-
-                    data += "title: " + title + "\nDescription: " + desc + "\nID: " + documentId +
-                            "\nPriority: " + priority + "\n\n";
-                }
-                textview_data.setText(data);
-            }
-        });
-    }
+//        });
+//    }
 
 
     public void saveNote(View view) {
@@ -150,16 +154,55 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void updateDesc(View view) {
-        String description = edt_text_desc.getText().toString();
-
-        Map<String, Object> map = new HashMap<>();
-        map.put(KEY_DESCRIPTION, description);
-
-        noteRef.set(map, SetOptions.merge());
+//        String description = edt_text_desc.getText().toString();
+//
+//        Map<String, Object> map = new HashMap<>();
+//        map.put(KEY_DESCRIPTION, description);
+//
+//        noteRef.set(map, SetOptions.merge());
         //noteRef.update(map);
     }
 
     public void loadNote(View view) {
+
+        Query query;
+        if(lastResult == null){
+            query = notebookRef.orderBy("priority").limit(3);
+        }else{
+
+            query = notebookRef.orderBy("priority")
+                    .startAfter(lastResult)
+                    .limit(3);
+        }
+
+                query.get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+
+                        String data = "";
+                        for (QueryDocumentSnapshot snapshots : queryDocumentSnapshots) {
+
+                            Note note = snapshots.toObject(Note.class);
+                            note.setDocumentId(snapshots.getId());
+
+                            String documentId = note.getDocumentId();
+                            String title = note.getTitle();
+                            String description = note.getDescription();
+                            int priority = note.getPriority();
+
+                            data += "title: " + title + "\nDescription: " + description + "\nID: " + documentId +
+                                    "\nPriority: " + priority + "\n\n";
+                        }
+
+                        if (queryDocumentSnapshots.size() > 0) {
+                            data += "______________\n\n";
+                            textview_data.append(data);
+                            lastResult = queryDocumentSnapshots.getDocuments()
+                                    .get(queryDocumentSnapshots.size() - 1);
+                        }
+                    }
+                });
 
 //        noteRef.get()
 //                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
@@ -191,39 +234,39 @@ public class MainActivity extends AppCompatActivity {
 //
 //                    }
 //                }); for single value we use this method
-
-        Task task = notebookRef.whereLessThan("priority", 2)
-//                .whereEqualTo("title","Aa")
-                .orderBy("priority")
-                .get();
-
-        Task task2 = notebookRef.whereGreaterThan("priority", 2)
-                .orderBy("priority")
-                .get();
-
-        Task<List<QuerySnapshot>> allTasks = Tasks.whenAllSuccess(task, task2);
-        allTasks.addOnSuccessListener(new OnSuccessListener<List<QuerySnapshot>>() {
-            @Override
-            public void onSuccess(List<QuerySnapshot> querySnapshots) {
-
-                String data = "";
-                for (QuerySnapshot queryDocumentSnapshots : querySnapshots) {
-                    for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
-
-                        Note note = documentSnapshot.toObject(Note.class);
-                        note.setDocumentId(documentSnapshot.getId());
-                        String title = note.getTitle();
-                        String description = note.getDescription();
-                        String documentId = note.getDocumentId();
-                        int priority = note.getPriority();
-
-                        data += "title: " + title + "\nDescription: " + description + "\nID: " + documentId +
-                                "\nPriority: " + priority + "\n\n";
-                    }
-                }
-                textview_data.setText(data);
-            }
-        });
+//
+//        Task task = notebookRef.whereLessThan("priority", 2)
+////                .whereEqualTo("title","Aa")
+//                .orderBy("priority")
+//                .get();
+//
+//        Task task2 = notebookRef.whereGreaterThan("priority", 2)
+//                .orderBy("priority")
+//                .get();
+//
+//        Task<List<QuerySnapshot>> allTasks = Tasks.whenAllSuccess(task, task2);
+//        allTasks.addOnSuccessListener(new OnSuccessListener<List<QuerySnapshot>>() {
+//            @Override
+//            public void onSuccess(List<QuerySnapshot> querySnapshots) {
+//
+//                String data = "";
+//                for (QuerySnapshot queryDocumentSnapshots : querySnapshots) {
+//                    for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+//
+//                        Note note = documentSnapshot.toObject(Note.class);
+//                        note.setDocumentId(documentSnapshot.getId());
+//                        String title = note.getTitle();
+//                        String description = note.getDescription();
+//                        String documentId = note.getDocumentId();
+//                        int priority = note.getPriority();
+//
+//                        data += "title: " + title + "\nDescription: " + description + "\nID: " + documentId +
+//                                "\nPriority: " + priority + "\n\n";
+//                    }
+//                }
+//                textview_data.setText(data);
+//            }
+//        });
     }
 
     public void deleteDescription(View view) {
@@ -231,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
         //Map<String, Object> desc = new HashMap<>();
         // desc.put(KEY_DESCRIPTION, FieldValue.delete());
         //   noteRef.update(desc);
-        noteRef.update(KEY_DESCRIPTION, FieldValue.delete());
+       // noteRef.update(KEY_DESCRIPTION, FieldValue.delete());
 
 
     }
@@ -239,6 +282,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void deleteNote(View view) {
 
-        noteRef.delete();
+     //   noteRef.delete();
     }
 }
