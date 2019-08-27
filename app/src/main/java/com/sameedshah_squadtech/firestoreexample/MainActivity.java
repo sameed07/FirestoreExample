@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -11,6 +12,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -112,6 +114,45 @@ public class MainActivity extends AppCompatActivity {
 //        });
 //    }
 
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        notebookRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                if(e != null){
+
+                    return;
+                }
+
+                for(DocumentChange dc : queryDocumentSnapshots.getDocumentChanges()){
+
+                    DocumentSnapshot documentSnapshot = dc.getDocument();
+                    String id = documentSnapshot.getId();
+                    int oldIndex = dc.getOldIndex();
+                    int newIndex = dc.getNewIndex();
+
+                    switch (dc.getType()){
+
+                        case ADDED:
+                            textview_data.append("\nADDED: " + id +
+                            "\nOld Index: "  + oldIndex + " New Index : " + newIndex);
+                            break;
+                        case REMOVED:
+                            textview_data.append("\nREMOVED: " + id +
+                                    "\nOld Index: "  + oldIndex + " New Index : " + newIndex);
+                            break;
+                        case MODIFIED:
+                            textview_data.append("\nMODIFIED: " + id +
+                                    "\nOld Index: "  + oldIndex + " New Index : " + newIndex);
+                            break;
+                    }
+                }
+            }
+        });
+    }
 
     public void saveNote(View view) {
 
